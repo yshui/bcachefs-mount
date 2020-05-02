@@ -1,4 +1,3 @@
-#![feature(maybe_uninit_ref)]
 mod bcachefs {
 	#![allow(non_upper_case_globals)]
 	#![allow(non_camel_case_types)]
