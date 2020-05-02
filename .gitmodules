@@ -1,0 +1,3 @@
+[submodule "libbcachefs"]
+	path = libbcachefs
+	url = https://github.com/yshui/bcachefs-tools
