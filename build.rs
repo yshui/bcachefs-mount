@@ -48,6 +48,7 @@ fn main() {
 		.clang_arg(format!("-I{}", top_dir.join("libbcachefs").display()))
 		.clang_arg("-DZSTD_STATIC_LINKING_ONLY")
 		.clang_arg("-DNO_BCACHEFS_FS")
+		.clang_arg("-D_GNU_SOURCE")
 		.whitelist_function("bch2_read_super")
 		.opaque_type("gendisk")
 		.generate()
