@@ -62,4 +62,16 @@ fn main() {
 		.generate()
 		.unwrap();
 	bindings.write_to_file(out_dir.join("bcachefs.rs")).unwrap();
+
+	let keyutils = pkg_config::probe_library("libkeyutils").unwrap();
+	let bindings = bindgen::builder()
+		.header(top_dir.join("src").join("keyutils_wrapper.h").display().to_string())
+		.clang_args(keyutils.include_paths.iter().map(|p| format!("-I{}", p.display())))
+		.whitelist_function("request_key")
+		.whitelist_function("add_key")
+		.whitelist_function("keyctl_search")
+		.whitelist_var("KEY_SPEC_.*")
+		.generate()
+		.unwrap();
+	bindings.write_to_file(out_dir.join("keyutils.rs")).unwrap();
 }

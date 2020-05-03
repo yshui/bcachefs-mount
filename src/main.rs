@@ -3,7 +3,7 @@ use anyhow::anyhow;
 
 #[derive(parse_display::FromStr, parse_display::Display, Debug)]
 #[display(style = "snake_case")]
-enum PasswordInput {
+pub(crate) enum PasswordInput {
 	Fail,
 	Wait,
 	Ask,
@@ -33,6 +33,15 @@ struct Options {
 
 mod filesystem;
 mod key;
+mod keyutils {
+	#![allow(non_upper_case_globals)]
+	#![allow(non_camel_case_types)]
+	#![allow(non_snake_case)]
+	#![allow(unused)]
+
+	include!(concat!(env!("OUT_DIR"), "/keyutils.rs"));
+}
+
 mod bcachefs {
 	#![allow(non_upper_case_globals)]
 	#![allow(non_camel_case_types)]
@@ -112,7 +121,11 @@ fn main() -> anyhow::Result<()> {
 		);
 	}
 
-	if let Some(_fs) = fss.get(&opt.uuid) {
+	if let Some(fs) = fss.get(&opt.uuid) {
+		if fs.encrypted() {
+			info!("Making sure key is loaded for this filesystem");
+			key::prepare_key(fs.uuid(), opt.password)?;
+		}
 		Ok(())
 	} else {
 		Err(anyhow!("Filesystem {} is not found", opt.uuid))
