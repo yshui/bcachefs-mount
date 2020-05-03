@@ -10,7 +10,6 @@ edition = "2018"
 log = "0.4"
 env_logger = "0.7"
 anyhow = "1.0"
-clap = "2.33"
 udev = "0.4"
 uuid = "0.8"
 libc = "0.2.69"
@@ -28,3 +27,9 @@ either = "1.5"
 num_cpus = "1.13"
 pkg-config = "0.3"
 bindgen = "0.53"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

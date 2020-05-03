@@ -48,7 +48,6 @@ dependencies = [
  "anyhow",
  "bindgen",
  "bitfield",
- "clap",
  "either",
  "env_logger",
  "errno",
