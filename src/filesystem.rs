@@ -13,7 +13,7 @@ pub struct FileSystem {
 	#[getset(get_copy = "pub")]
 	encrypted: bool,
 	/// Super block
-	sb: bcachefs::bch_sb_handle,
+	_sb: bcachefs::bch_sb_handle,
 	/// Member devices for this filesystem
 	#[getset(get = "pub")]
 	devices: Vec<PathBuf>,
@@ -21,7 +21,7 @@ pub struct FileSystem {
 
 /// Parse a comma-separated mount options and split out mountflags and filesystem
 /// specific options.
-fn parse_mount_options(options: impl AsRef<str>) -> (String, u64) {
+fn parse_mount_options(options: impl AsRef<str>) -> (Option<String>, u64) {
 	use either::Either::*;
 	let (opts, flags) = options
 		.as_ref()
@@ -50,7 +50,7 @@ fn parse_mount_options(options: impl AsRef<str>) -> (String, u64) {
 		});
 
 	use itertools::Itertools;
-	(opts.iter().join(","), flags)
+	(if opts.len() == 0 { None } else { Some(opts.iter().join(",")) }, flags)
 }
 
 impl FileSystem {
@@ -58,7 +58,7 @@ impl FileSystem {
 		Self {
 			uuid: sb.sb().uuid(),
 			encrypted: sb.sb().crypt().is_some(),
-			sb,
+			_sb: sb,
 			devices: vec![],
 		}
 	}
@@ -79,8 +79,12 @@ impl FileSystem {
 		let target = target.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
 		let fstype = c_str!("bcachefs");
 		let (data, mountflags) = parse_mount_options(options);
-		let data = std::ffi::CString::new(data)?;
-		let data = data.as_c_str().to_bytes_with_nul().as_ptr() as *const c_void;
+		let data = if let Some(data) = data {
+			let data = std::ffi::CString::new(data)?;
+			data.as_c_str().to_bytes_with_nul().as_ptr() as *const c_void
+		} else {
+			std::ptr::null()
+		};
 
 		let ret = unsafe { libc::mount(src, target, fstype, mountflags, data) };
 		if ret == 0 {
