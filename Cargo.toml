@@ -15,6 +15,8 @@ udev = "0.4"
 uuid = "0.8"
 libc = "0.2.69"
 gag = "0.1"
+bitfield = "0.13"
+memoffset = "0.5"
 
 [build-dependencies]
 num_cpus = "1.13"

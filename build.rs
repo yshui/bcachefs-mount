@@ -49,8 +49,16 @@ fn main() {
 		.clang_arg("-DZSTD_STATIC_LINKING_ONLY")
 		.clang_arg("-DNO_BCACHEFS_FS")
 		.clang_arg("-D_GNU_SOURCE")
+		.derive_debug(false)
+		.default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: true })
 		.whitelist_function("bch2_read_super")
+		.whitelist_function("bch2_sb_field_.*")
+		.whitelist_var("BCH_.*")
+		.whitelist_type("bch_kdf_types")
+		.whitelist_type("bch_sb_field_.*")
+		.rustified_enum("bch_kdf_types")
 		.opaque_type("gendisk")
+		.opaque_type("bkey")
 		.generate()
 		.unwrap();
 	bindings.write_to_file(out_dir.join("bcachefs.rs")).unwrap();
