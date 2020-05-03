@@ -32,16 +32,16 @@ fn main() {
 		pkg_config::probe_library(lib).unwrap();
 	}
 	println!("cargo:rustc-link-lib=aio");
+	println!("cargo:rustc-link-lib=scrypt");
 
 	let top_dir: PathBuf = std::env::var_os("CARGO_MANIFEST_DIR").unwrap().into();
 	let libbcachefs_dir = top_dir.join("libbcachefs").join("libbcachefs");
 	let bindings = bindgen::builder()
-		.header(libbcachefs_dir
-			.join("super-io.h")
-			.display()
-			.to_string())
-		.header(libbcachefs_dir
-			.join("checksum.h")
+		.header(libbcachefs_dir.join("super-io.h").display().to_string())
+		.header(libbcachefs_dir.join("checksum.h").display().to_string())
+		.header(top_dir
+			.join("libbcachefs")
+			.join("crypto.h")
 			.display()
 			.to_string())
 		.header(libbcachefs_dir
@@ -58,10 +58,13 @@ fn main() {
 		.clang_arg("-D_GNU_SOURCE")
 		.derive_debug(false)
 		.derive_default(true)
-		.default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: true })
+		.default_enum_style(bindgen::EnumVariation::Rust {
+			non_exhaustive: true,
+		})
 		.whitelist_function("bch2_read_super")
 		.whitelist_function("bch2_sb_field_.*")
 		.whitelist_function("bch2_chacha_encrypt_key")
+		.whitelist_function("derive_passphrase")
 		.whitelist_var("BCH_.*")
 		.whitelist_type("bch_kdf_types")
 		.whitelist_type("bch_sb_field_.*")
@@ -76,8 +79,16 @@ fn main() {
 
 	let keyutils = pkg_config::probe_library("libkeyutils").unwrap();
 	let bindings = bindgen::builder()
-		.header(top_dir.join("src").join("keyutils_wrapper.h").display().to_string())
-		.clang_args(keyutils.include_paths.iter().map(|p| format!("-I{}", p.display())))
+		.header(top_dir
+			.join("src")
+			.join("keyutils_wrapper.h")
+			.display()
+			.to_string())
+		.clang_args(
+			keyutils.include_paths
+				.iter()
+				.map(|p| format!("-I{}", p.display())),
+		)
 		.whitelist_function("request_key")
 		.whitelist_function("add_key")
 		.whitelist_function("keyctl_search")
