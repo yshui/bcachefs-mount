@@ -1,6 +1,24 @@
 use structopt::StructOpt;
 use anyhow::anyhow;
 
+#[macro_export]
+macro_rules! c_str {
+	($lit:expr) => {
+		unsafe { std::ffi::CStr::from_ptr(concat!($lit, "\0").as_ptr() as *const std::os::raw::c_char)
+			       .to_bytes_with_nul()
+			       .as_ptr() as *const std::os::raw::c_char }
+	};
+}
+
+#[derive(Debug)]
+struct ErrnoError(errno::Errno);
+impl std::fmt::Display for ErrnoError {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+		self.0.fmt(f)
+	}
+}
+impl std::error::Error for ErrnoError {}
+
 #[derive(parse_display::FromStr, parse_display::Display, Debug)]
 #[display(style = "snake_case")]
 pub(crate) enum PasswordInput {
@@ -126,7 +144,8 @@ fn main() -> anyhow::Result<()> {
 			info!("Making sure key is loaded for this filesystem");
 			key::prepare_key(fs.uuid(), opt.password)?;
 		}
-		Ok(())
+
+		fs.mount(&opt.mountpoint, &opt.options)
 	} else {
 		Err(anyhow!("Filesystem {} is not found", opt.uuid))
 	}

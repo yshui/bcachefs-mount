@@ -22,6 +22,7 @@ itertools = "0.9"
 structopt = "0.3"
 parse-display = "0.1"
 errno = "0.2"
+either = "1.5"
 
 [build-dependencies]
 num_cpus = "1.13"

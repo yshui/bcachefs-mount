@@ -19,13 +19,74 @@ pub struct FileSystem {
 	devices: Vec<PathBuf>,
 }
 
+/// Parse a comma-separated mount options and split out mountflags and filesystem
+/// specific options.
+fn parse_mount_options(options: impl AsRef<str>) -> (String, u64) {
+	use either::Either::*;
+	let (opts, flags) = options
+		.as_ref()
+		.split(",")
+		.map(|o| match o {
+			"dirsync" => Left(libc::MS_DIRSYNC),
+			"lazytime" => Left(1 << 25), // MS_LAZYTIME
+			"mand" => Left(libc::MS_MANDLOCK),
+			"noatime" => Left(libc::MS_NOATIME),
+			"nodev" => Left(libc::MS_NODEV),
+			"nodiratime" => Left(libc::MS_NODIRATIME),
+			"noexec" => Left(libc::MS_NOEXEC),
+			"nosuid" => Left(libc::MS_NOSUID),
+			"ro" => Left(libc::MS_RDONLY),
+			"relatime" => Left(libc::MS_RELATIME),
+			"strictatime" => Left(libc::MS_STRICTATIME),
+			"sync" => Left(libc::MS_SYNCHRONOUS),
+			o @ _ => Right(o),
+		})
+		.fold((Vec::new(), 0), |(mut opts, flags), next| match next {
+			Left(f) => (opts, flags | f),
+			Right(o) => {
+				opts.push(o);
+				(opts, flags)
+			}
+		});
+
+	use itertools::Itertools;
+	(opts.iter().join(","), flags)
+}
+
 impl FileSystem {
-	fn new(sb: bcachefs::bch_sb_handle) -> Self {
+	pub(crate) fn new(sb: bcachefs::bch_sb_handle) -> Self {
 		Self {
 			uuid: sb.sb().uuid(),
 			encrypted: sb.sb().crypt().is_some(),
 			sb,
 			devices: vec![],
+		}
+	}
+
+	pub fn mount(
+		&self,
+		target: impl AsRef<std::path::Path>,
+		options: impl AsRef<str>,
+	) -> anyhow::Result<()> {
+		use itertools::Itertools;
+		use std::ffi::c_void;
+		use std::os::raw::c_char;
+		use std::os::unix::ffi::OsStrExt;
+		let src = self.devices.iter().map(|d| d.display()).join(":");
+		let src = std::ffi::CString::new(src)?;
+		let src = src.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
+		let target = std::ffi::CString::new(target.as_ref().as_os_str().as_bytes())?;
+		let target = target.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
+		let fstype = c_str!("bcachefs");
+		let (data, mountflags) = parse_mount_options(options);
+		let data = std::ffi::CString::new(data)?;
+		let data = data.as_c_str().to_bytes_with_nul().as_ptr() as *const c_void;
+
+		let ret = unsafe { libc::mount(src, target, fstype, mountflags, data) };
+		if ret == 0 {
+			Ok(())
+		} else {
+			Err(crate::ErrnoError(errno::errno()).into())
 		}
 	}
 }
