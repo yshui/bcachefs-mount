@@ -17,6 +17,7 @@ libc = "0.2.69"
 gag = "0.1"
 bitfield = "0.13"
 memoffset = "0.5"
+getset = "0.1"
 
 [build-dependencies]
 num_cpus = "1.13"
