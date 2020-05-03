@@ -1,4 +1,5 @@
 use structopt::StructOpt;
+use anyhow::anyhow;
 
 #[derive(parse_display::FromStr, parse_display::Display, Debug)]
 #[display(style = "snake_case")]
@@ -16,11 +17,7 @@ struct Options {
 	/// "fail" - don't ask for password, fail if filesystem is encrypted;
 	/// "wait" - wait for password to become available before mounting;
 	/// "ask" -  prompt the user for password;
-	#[structopt(
-		short,
-		long,
-		default_value = "fail",
-	)]
+	#[structopt(short, long, default_value = "fail")]
 	password: PasswordInput,
 
 	/// External UUID of the bcachefs filesystem
@@ -35,6 +32,7 @@ struct Options {
 }
 
 mod filesystem;
+mod key;
 mod bcachefs {
 	#![allow(non_upper_case_globals)]
 	#![allow(non_camel_case_types)]
@@ -92,24 +90,31 @@ mod bcachefs {
 }
 
 fn main() -> anyhow::Result<()> {
+	use itertools::Itertools;
+	use log::{info, trace};
+
+	env_logger::init();
 	let opt = Options::from_args();
-	println!("{:?}", opt);
+	trace!("{:?}", opt);
+
 	let fss = filesystem::probe_filesystems()?;
-	println!("Found {} bcachefs filesystems: ", fss.len());
+	info!("Found {} bcachefs filesystems: ", fss.len());
 	for fs in fss.values() {
-		print!(
-			"{} ({}): ",
+		info!(
+			"{} ({}): {}",
 			fs.uuid(),
 			if fs.encrypted() {
 				"encrypted"
 			} else {
 				"unencrypted"
-			}
+			},
+			fs.devices().iter().map(|d| d.display()).join(" ")
 		);
-		for dev in fs.devices() {
-			print!("{} ", dev.display());
-		}
-		println!("");
 	}
-	Ok(())
+
+	if let Some(_fs) = fss.get(&opt.uuid) {
+		Ok(())
+	} else {
+		Err(anyhow!("Filesystem {} is not found", opt.uuid))
+	}
 }
