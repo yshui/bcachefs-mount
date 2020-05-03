@@ -56,6 +56,7 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 		)
 	};
 
+	println!("{} {} {}", scrypt_flags.N(), scrypt_flags.R(), scrypt_flags.P());
 	scrypt::scrypt(
 		pass.as_bytes(),
 		"bcache".as_bytes(),
