@@ -38,3 +38,24 @@ Caveats
 =======
 
 * `--password ask` is not yet implemented, but you ask use `--password wait`, and load the key with `bcachefs unlock`.
+
+Build
+=====
+
+```sh
+$ git submodule update --init --recursive
+$ cargo build --release
+```
+
+Binary will be built in `target/release/bcachefs-mount`
+
+Dependencies:
+
+    * blkid
+    * uuid
+    * liburcu
+    * libsodium
+    * zlib
+    * liblz4
+    * libzstd
+    * libkeyutils
