@@ -1,3 +1,39 @@
+use structopt::StructOpt;
+
+#[derive(parse_display::FromStr, parse_display::Display, Debug)]
+#[display(style = "snake_case")]
+enum PasswordInput {
+	Fail,
+	Wait,
+	Ask,
+}
+
+#[derive(StructOpt, Debug)]
+struct Options {
+	/// Where the password would be loaded from.
+	///
+	/// Possible values are:
+	/// "fail" - don't ask for password, fail if filesystem is encrypted;
+	/// "wait" - wait for password to become available before mounting;
+	/// "ask" -  prompt the user for password;
+	#[structopt(
+		short,
+		long,
+		default_value = "fail",
+	)]
+	password: PasswordInput,
+
+	/// External UUID of the bcachefs filesystem
+	uuid: uuid::Uuid,
+
+	/// Where the filesystem should be mounted
+	mountpoint: std::path::PathBuf,
+
+	/// Mount options
+	#[structopt(short, default_value = "")]
+	options: String,
+}
+
 mod filesystem;
 mod bcachefs {
 	#![allow(non_upper_case_globals)]
@@ -56,6 +92,8 @@ mod bcachefs {
 }
 
 fn main() -> anyhow::Result<()> {
+	let opt = Options::from_args();
+	println!("{:?}", opt);
 	let fss = filesystem::probe_filesystems()?;
 	println!("Found {} bcachefs filesystems: ", fss.len());
 	for fs in fss.values() {
