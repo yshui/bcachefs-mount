@@ -43,7 +43,7 @@ struct Options {
 	uuid: uuid::Uuid,
 
 	/// Where the filesystem should be mounted
-	mountpoint: std::path::PathBuf,
+	mountpoint: Option<std::path::PathBuf>,
 
 	/// Mount options
 	#[structopt(short, default_value = "")]
@@ -146,7 +146,11 @@ fn main() -> anyhow::Result<()> {
 			key::prepare_key(fs.uuid(), opt.password)?;
 		}
 
-		fs.mount(&opt.mountpoint, &opt.options)
+		if let Some(p) = opt.mountpoint {
+			fs.mount(&p, &opt.options)
+		} else {
+			Ok(())
+		}
 	} else {
 		Err(anyhow!("Filesystem {} is not found", opt.uuid))
 	}
