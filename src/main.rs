@@ -72,9 +72,9 @@ mod bcachefs {
 	use bitfield::bitfield;
 	bitfield! {
 		pub struct bch_scrypt_flags(u64);
-		pub N, _: 16, 0;
-		pub R, _: 32, 16;
-		pub P, _: 48, 32;
+		pub N, _: 15, 0;
+		pub R, _: 31, 16;
+		pub P, _: 47, 32;
 	}
 	bitfield! {
 		pub struct bch_crypt_flags(u64);
