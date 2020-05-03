@@ -13,7 +13,8 @@ pub struct FileSystem {
 	#[getset(get_copy = "pub")]
 	encrypted: bool,
 	/// Super block
-	_sb: bcachefs::bch_sb_handle,
+	#[getset(get = "pub")]
+	sb: bcachefs::bch_sb_handle,
 	/// Member devices for this filesystem
 	#[getset(get = "pub")]
 	devices: Vec<PathBuf>,
@@ -65,7 +66,7 @@ impl FileSystem {
 		Self {
 			uuid: sb.sb().uuid(),
 			encrypted: sb.sb().crypt().is_some(),
-			_sb: sb,
+			sb: sb,
 			devices: vec![],
 		}
 	}

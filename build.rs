@@ -34,11 +34,18 @@ fn main() {
 	println!("cargo:rustc-link-lib=aio");
 
 	let top_dir: PathBuf = std::env::var_os("CARGO_MANIFEST_DIR").unwrap().into();
+	let libbcachefs_dir = top_dir.join("libbcachefs").join("libbcachefs");
 	let bindings = bindgen::builder()
-		.header(top_dir
-			.join("libbcachefs")
-			.join("libbcachefs")
+		.header(libbcachefs_dir
 			.join("super-io.h")
+			.display()
+			.to_string())
+		.header(libbcachefs_dir
+			.join("checksum.h")
+			.display()
+			.to_string())
+		.header(libbcachefs_dir
+			.join("bcachefs_format.h")
 			.display()
 			.to_string())
 		.clang_arg(format!(
@@ -50,12 +57,16 @@ fn main() {
 		.clang_arg("-DNO_BCACHEFS_FS")
 		.clang_arg("-D_GNU_SOURCE")
 		.derive_debug(false)
+		.derive_default(true)
 		.default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: true })
 		.whitelist_function("bch2_read_super")
 		.whitelist_function("bch2_sb_field_.*")
+		.whitelist_function("bch2_chacha_encrypt_key")
 		.whitelist_var("BCH_.*")
 		.whitelist_type("bch_kdf_types")
 		.whitelist_type("bch_sb_field_.*")
+		.whitelist_type("bch_encrypted_key")
+		.whitelist_type("nonce")
 		.rustified_enum("bch_kdf_types")
 		.opaque_type("gendisk")
 		.opaque_type("bkey")

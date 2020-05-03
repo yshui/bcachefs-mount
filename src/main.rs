@@ -72,9 +72,9 @@ mod bcachefs {
 	use bitfield::bitfield;
 	bitfield! {
 		pub struct bch_scrypt_flags(u64);
-		N, _: 16, 0;
-		R, _: 32, 16;
-		P, _: 48, 32;
+		pub N, _: 16, 0;
+		pub R, _: 32, 16;
+		pub P, _: 48, 32;
 	}
 	bitfield! {
 		pub struct bch_crypt_flags(u64);
@@ -89,6 +89,9 @@ mod bcachefs {
 			} else {
 				Some(bch_scrypt_flags(self.kdf_flags))
 			}
+		}
+		pub fn key(&self) -> &bch_encrypted_key {
+			&self.key
 		}
 	}
 	impl bch_sb {
@@ -108,6 +111,15 @@ mod bcachefs {
 		}
 		pub fn uuid(&self) -> uuid::Uuid {
 			uuid::Uuid::from_bytes(self.user_uuid.b)
+		}
+
+		/// Get the nonce used to encrypt the superblock
+		pub fn nonce(&self) -> nonce {
+			use byteorder::{ReadBytesExt, LittleEndian};
+			let mut internal_uuid = &self.uuid.b[..];
+			let dword1 = internal_uuid.read_u32::<LittleEndian>().unwrap();
+			let dword2 = internal_uuid.read_u32::<LittleEndian>().unwrap();
+			nonce { d: [0, 0, dword1, dword2] }
 		}
 	}
 	impl bch_sb_handle {
@@ -143,7 +155,7 @@ fn main() -> anyhow::Result<()> {
 	if let Some(fs) = fss.get(&opt.uuid) {
 		if fs.encrypted() {
 			info!("Making sure key is loaded for this filesystem");
-			key::prepare_key(fs.uuid(), opt.password)?;
+			key::prepare_key(&fs, opt.password)?;
 		}
 
 		if let Some(p) = opt.mountpoint {
