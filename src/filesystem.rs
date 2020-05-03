@@ -50,7 +50,14 @@ fn parse_mount_options(options: impl AsRef<str>) -> (Option<String>, u64) {
 		});
 
 	use itertools::Itertools;
-	(if opts.len() == 0 { None } else { Some(opts.iter().join(",")) }, flags)
+	(
+		if opts.len() == 0 {
+			None
+		} else {
+			Some(opts.iter().join(","))
+		},
+		flags,
+	)
 }
 
 impl FileSystem {
@@ -73,18 +80,18 @@ impl FileSystem {
 		use std::os::raw::c_char;
 		use std::os::unix::ffi::OsStrExt;
 		let src = self.devices.iter().map(|d| d.display()).join(":");
-		let src = std::ffi::CString::new(src)?;
-		let src = src.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
-		let target = std::ffi::CString::new(target.as_ref().as_os_str().as_bytes())?;
-		let target = target.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
-		let fstype = c_str!("bcachefs");
 		let (data, mountflags) = parse_mount_options(options);
-		let data = if let Some(data) = data {
-			let data = std::ffi::CString::new(data)?;
+		let fstype = c_str!("bcachefs");
+
+		let src = std::ffi::CString::new(src)?; // bind the CString to keep it alive
+		let target = std::ffi::CString::new(target.as_ref().as_os_str().as_bytes())?; // ditto
+		let data = data.map(|data| std::ffi::CString::new(data)).transpose()?; // ditto
+
+		let src = src.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
+		let target = target.as_c_str().to_bytes_with_nul().as_ptr() as *const c_char;
+		let data = data.as_ref().map_or(std::ptr::null(), |data| {
 			data.as_c_str().to_bytes_with_nul().as_ptr() as *const c_void
-		} else {
-			std::ptr::null()
-		};
+		});
 
 		let ret = unsafe { libc::mount(src, target, fstype, mountflags, data) };
 		if ret == 0 {
