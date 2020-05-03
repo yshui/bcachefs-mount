@@ -28,6 +28,7 @@ pub(crate) enum PasswordInput {
 }
 
 #[derive(StructOpt, Debug)]
+/// Mount a bcachefs filesystem by its UUID.
 struct Options {
 	/// Where the password would be loaded from.
 	///
