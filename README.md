@@ -51,6 +51,7 @@ Binary will be built in `target/release/bcachefs-mount`
 
 Dependencies:
 
+* rust
 * blkid
 * uuid
 * liburcu
