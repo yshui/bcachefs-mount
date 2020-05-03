@@ -37,7 +37,7 @@ ARGS:
 Caveats
 =======
 
-* `--password ask` is not yet implemented, but you ask use `--password wait`, and load the key with `bcachefs unlock`.
+* `--password ask` is not yet implemented, but you can use `--password wait`, and load the key with `bcachefs unlock`.
 
 Build
 =====
