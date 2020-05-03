@@ -1,20 +1,29 @@
 use log::info;
 
-fn wait_for_key(uuid: &uuid::Uuid) -> anyhow::Result<()> {
+fn check_for_key(key_name: &std::ffi::CStr) -> anyhow::Result<bool> {
 	use crate::keyutils::{self, keyctl_search};
-	let key_name = std::ffi::CString::new(format!("bcachefs:{}", uuid)).unwrap();
-	let key_name = key_name.as_c_str().to_bytes_with_nul().as_ptr() as *const _;
+	let key_name = key_name.to_bytes_with_nul().as_ptr() as *const _;
 	let key_type = c_str!("logon");
+
+	let key_id = unsafe {
+		keyctl_search(keyutils::KEY_SPEC_USER_KEYRING, key_type, key_name, 0)
+	};
+	if key_id > 0 {
+		info!("Key has became avaiable");
+		Ok(true)
+	} else if errno::errno().0 != libc::ENOKEY {
+		Err(crate::ErrnoError(errno::errno()).into())
+	} else {
+		Ok(false)
+	}
+
+}
+
+fn wait_for_key(uuid: &uuid::Uuid) -> anyhow::Result<()> {
+	let key_name = std::ffi::CString::new(format!("bcachefs:{}", uuid)).unwrap();
 	loop {
-		let key_id = unsafe {
-			keyctl_search(keyutils::KEY_SPEC_USER_KEYRING, key_type, key_name, 0)
-		};
-		if key_id > 0 {
-			info!("Key has became avaiable");
-			break Ok(());
-		}
-		if errno::errno().0 != libc::ENOKEY {
-			Err(crate::ErrnoError(errno::errno()))?;
+		if check_for_key(&key_name)? {
+			break Ok(())
 		}
 
 		std::thread::sleep(std::time::Duration::from_secs(1));
@@ -29,6 +38,12 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 	use scrypt::ScryptParams;
 	use std::convert::TryInto;
 	use byteorder::{ReadBytesExt, LittleEndian};
+
+	let key_name = std::ffi::CString::new(format!("bcachefs:{}", fs.uuid())).unwrap();
+	if check_for_key(&key_name)? {
+		return Ok(())
+	}
+
 	let bch_key_magic = BCH_KEY_MAGIC.as_bytes().read_u64::<LittleEndian>().unwrap();
 	let crypt = fs.sb().sb().crypt().unwrap();
 	let scrypt_flags = crypt.scrypt_flags().ok_or(anyhow!("Unsupported crypto"))?;
