@@ -9,6 +9,12 @@ edition = "2018"
 [dependencies]
 log = "0.4"
 env_logger = "0.7"
+anyhow = "1.0"
+clap = "2.33"
+udev = "0.4"
+uuid = "0.8"
+libc = "0.2.69"
+
 [build-dependencies]
 num_cpus = "1.13"
 pkg-config = "0.3"
