@@ -51,11 +51,11 @@ Binary will be built in `target/release/bcachefs-mount`
 
 Dependencies:
 
-    * blkid
-    * uuid
-    * liburcu
-    * libsodium
-    * zlib
-    * liblz4
-    * libzstd
-    * libkeyutils
+* blkid
+* uuid
+* liburcu
+* libsodium
+* zlib
+* liblz4
+* libzstd
+* libkeyutils
