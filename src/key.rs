@@ -47,7 +47,7 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 	let bch_key_magic = BCH_KEY_MAGIC.as_bytes().read_u64::<LittleEndian>().unwrap();
 	let crypt = fs.sb().sb().crypt().unwrap();
 	let scrypt_flags = crypt.scrypt_flags().ok_or(anyhow!("Unsupported crypto"))?;
-	let pass = rpassword::read_password_from_tty(Some("Enter passphrase"))?;
+	let pass = rpassword::read_password_from_tty(Some("Enter passphrase: "))?;
 	let mut output: bch_key = Default::default();
 	let output_slice = unsafe {
 		std::slice::from_raw_parts_mut(
