@@ -34,6 +34,7 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 	use crate::bcachefs::{self, bch2_chacha_encrypt_key, bch_encrypted_key, bch_key};
 	use anyhow::anyhow;
 	use byteorder::{LittleEndian, ReadBytesExt};
+	use std::os::raw::c_char;
 
 	let key_name = std::ffi::CString::new(format!("bcachefs:{}", fs.uuid())).unwrap();
 	if check_for_key(&key_name)? {
@@ -52,7 +53,7 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 	};
 
 	let mut key = crypt.key().clone();
-	unsafe {
+	let ret = unsafe {
 		bch2_chacha_encrypt_key(
 			&mut output as *mut _,
 			fs.sb().sb().nonce(),
@@ -60,10 +61,27 @@ fn ask_for_key(fs: &FileSystem) -> anyhow::Result<()> {
 			std::mem::size_of::<bch_encrypted_key>() as u64,
 		)
 	};
-	if key.magic == bch_key_magic {
-		Ok(())
-	} else {
+	if ret != 0 {
+		Err(anyhow!("chache decryption failure"))
+	} else if key.magic != bch_key_magic {
 		Err(anyhow!("failed to verify the password"))
+	} else {
+		let key_type = c_str!("logon");
+		let ret = unsafe {
+			crate::keyutils::add_key(
+				key_type,
+				key_name.as_c_str().to_bytes_with_nul() as *const _
+					as *const c_char,
+				&output as *const _ as *const _,
+				std::mem::size_of::<bch_key>() as u64,
+				crate::keyutils::KEY_SPEC_USER_KEYRING,
+			)
+		};
+		if ret == -1 {
+			Err(anyhow!("failed to add key to keyring: {}", errno::errno()))
+		} else {
+			Ok(())
+		}
 	}
 }
 
