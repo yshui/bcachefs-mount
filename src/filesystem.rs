@@ -41,6 +41,7 @@ fn parse_mount_options(options: impl AsRef<str>) -> (Option<String>, u64) {
 			"relatime" => Left(libc::MS_RELATIME),
 			"strictatime" => Left(libc::MS_STRICTATIME),
 			"sync" => Left(libc::MS_SYNCHRONOUS),
+			"" => Left(0),
 			o @ _ => Right(o),
 		})
 		.fold((Vec::new(), 0), |(mut opts, flags), next| match next {
