@@ -37,6 +37,7 @@ fn parse_mount_options(options: impl AsRef<str>) -> (Option<String>, u64) {
 			"noexec" => Left(libc::MS_NOEXEC),
 			"nosuid" => Left(libc::MS_NOSUID),
 			"ro" => Left(libc::MS_RDONLY),
+			"rw" => Left(0),
 			"relatime" => Left(libc::MS_RELATIME),
 			"strictatime" => Left(libc::MS_STRICTATIME),
 			"sync" => Left(libc::MS_SYNCHRONOUS),
